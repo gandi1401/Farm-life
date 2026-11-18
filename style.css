@@ -3,73 +3,90 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
-body {
+html, body {
+  width: 100%;
+  height: 100%;
   overflow: hidden;
+  background: #789b65;
   font-family: Arial, sans-serif;
-  background: #6b9d50;
-  color: white;
   touch-action: none;
 }
 
 #game {
+  position: relative;
   width: 100vw;
   height: 100dvh;
-  position: relative;
   overflow: hidden;
 }
 
 canvas {
   position: absolute;
   inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
-  display: block;
+}
+
+.topbar, .stats, #message, .controls, .footer, #loading {
+  position: absolute;
+  z-index: 3;
 }
 
 .topbar {
-  position: absolute;
   top: 12px;
   left: 10px;
   right: 10px;
-  z-index: 2;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
 }
 
-.brand, .money, .info div {
-  background: #234c2ddd;
-  padding: 10px;
+.brand, .money, .stats span {
+  padding: 10px 12px;
+  background: #243c2bdc;
+  border: 1px solid #ffffff35;
   border-radius: 12px;
+  color: white;
   font-size: 13px;
   font-weight: bold;
 }
 
-.info {
-  position: absolute;
+.stats {
   top: 58px;
   left: 10px;
   display: flex;
-  gap: 8px;
-  z-index: 2;
+  gap: 6px;
 }
 
-.info div {
+.stats span {
+  font-size: 11px;
+  padding: 8px;
+}
+
+#message {
+  top: 105px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 85%;
+  padding: 9px 13px;
+  background: #243c2bdc;
+  color: white;
   font-size: 12px;
+  border-radius: 10px;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .controls {
-  position: absolute;
   bottom: 35px;
-  left: 15px;
-  right: 15px;
+  left: 12px;
+  right: 12px;
   display: flex;
   justify-content: space-between;
   align-items: end;
-  z-index: 3;
 }
 
 .movement {
@@ -84,64 +101,59 @@ canvas {
   gap: 5px;
 }
 
-.control, .actions button {
-  border: 2px solid #ffffff88;
-  background: #244a35dd;
+.movement button, .actions button {
+  border: 1px solid #ffffff88;
+  background: #263f31dd;
   color: white;
   border-radius: 14px;
-  font-size: 22px;
+  width: 48px;
+  height: 48px;
+  font-size: 21px;
   font-weight: bold;
-  width: 52px;
-  height: 52px;
   touch-action: none;
-}
-
-.control:active, .actions button:active {
-  background: #83b94d;
 }
 
 .actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .actions button {
-  width: 65px;
-  height: 65px;
-  font-size: 13px;
+  width: 58px;
+  height: 60px;
+  font-size: 21px;
 }
 
-#message {
-  position: absolute;
-  z-index: 2;
-  top: 105px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #193d2ddd;
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 12px;
-  white-space: nowrap;
+.actions small {
+  display: block;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+button:active {
+  background: #70994c;
+  transform: scale(.94);
+}
+
+.footer {
+  bottom: 8px;
+  left: 0;
+  width: 100%;
+  color: white;
+  font-size: 10px;
+  text-align: center;
+  text-shadow: 1px 1px 3px black;
+  pointer-events: none;
 }
 
 #loading {
-  position: absolute;
-  z-index: 5;
-  top: 45%;
+  top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: white;
-  background: #193d2d;
   padding: 15px;
-  border-radius: 10px;
-}
-
-.bottom-info {
-  position: absolute;
-  z-index: 2;
-  bottom: 8px;
-  width: 100%;
-  text-align: center;
-  font-size: 10px;
-  text-shadow: 1px 1px 3px black;
+  background: #243c2b;
+  border-radius: 12px;
+  color: white;
+  font-size: 13px;
+  white-space: nowrap;
 }
