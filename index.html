@@ -3,52 +3,45 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Farm Life Indonesia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#294b30">
+  <title>Farm Life Indonesia 2.0</title>
   <link rel="stylesheet" href="style.css">
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
-    }
-  }
-  </script>
 </head>
 <body>
-
   <div id="game">
-    <header class="topbar">
-      <div class="brand">🌾 FARM LIFE INDONESIA</div>
-      <div class="money">💰 <span id="money">500</span></div>
-    </header>
-
-    <div class="info">
-      <div>🌱 Level <span id="level">1</span></div>
-      <div>⭐ XP <span id="xp">0</span></div>
+    <div class="topbar">
+      <div class="brand">🌾 FARM LIFE</div>
+      <div class="money">💰 Rp <span id="money">500</span></div>
     </div>
 
-    <div id="loading">Memuat dunia pertanian...</div>
-    <div id="message">Selamat datang di Farm Life Indonesia!</div>
+    <div class="stats">
+      <span>⭐ Level <b id="level">1</b></span>
+      <span>XP <b id="xp">0</b></span>
+      <span>☀️ Pagi</span>
+    </div>
+
+    <div id="loading">Memuat Farm Life Indonesia 2.0...</div>
+    <div id="message">Selamat datang di kebunmu!</div>
 
     <div class="controls">
       <div class="movement">
-        <button class="control up" data-dir="up">▲</button>
+        <button data-dir="up">▲</button>
         <div class="middle">
-          <button class="control" data-dir="left">◀</button>
-          <button class="control" data-dir="down">▼</button>
-          <button class="control" data-dir="right">▶</button>
+          <button data-dir="left">◀</button>
+          <button data-dir="down">▼</button>
+          <button data-dir="right">▶</button>
         </div>
       </div>
 
       <div class="actions">
-        <button id="plantBtn">🌱<br>Tanam</button>
-        <button id="harvestBtn">🌾<br>Panen</button>
+        <button id="plantBtn">🌱<small>Tanam</small></button>
+        <button id="harvestBtn">🌾<small>Panen</small></button>
+        <button id="feedBtn">🥕<small>Beri makan</small></button>
       </div>
     </div>
 
-    <div class="bottom-info">
-      Farm Life Indonesia • Versi 1.0
-    </div>
+    <div class="footer">FARM LIFE INDONESIA • V2.0</div>
   </div>
 
   <script type="module" src="game.js"></script>
