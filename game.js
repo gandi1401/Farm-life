@@ -2,10 +2,10 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
 
-// ======================================
-// FARM LIFE INDONESIA 4.0
-// ISOMETRIC FARMING & BUILDING
-// ======================================
+// ==========================================
+// FARM LIFE INDONESIA 5.0
+// CUSTOM 3D FARMER
+// ==========================================
 
 const $ = id => document.getElementById(id);
 
@@ -19,11 +19,12 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9bd8f2);
 scene.fog = new THREE.Fog(0x9bd8f2, 90, 190);
 
-// ======================================
+// ==========================================
 // KAMERA ISOMETRIK
-// ======================================
+// ==========================================
 
 const viewHeight = 60;
+
 const camera = new THREE.OrthographicCamera(
   -viewHeight * window.innerWidth / window.innerHeight / 2,
   viewHeight * window.innerWidth / window.innerHeight / 2,
@@ -44,9 +45,9 @@ function updateCamera() {
 
 updateCamera();
 
-// ======================================
+// ==========================================
 // RENDERER
-// ======================================
+// ==========================================
 
 const renderer = new THREE.WebGLRenderer({
   antialias: false,
@@ -65,9 +66,9 @@ game.appendChild(renderer.domElement);
 const canvas = renderer.domElement;
 canvas.style.touchAction = "none";
 
-// ======================================
+// ==========================================
 // PENCAHAYAAN
-// ======================================
+// ==========================================
 
 scene.add(
   new THREE.HemisphereLight(0xffffff, 0x637d45, 2)
@@ -77,9 +78,9 @@ const sunlight = new THREE.DirectionalLight(0xffffff, 2);
 sunlight.position.set(25, 40, 20);
 scene.add(sunlight);
 
-// ======================================
-// LOADER MODEL GLB
-// ======================================
+// ==========================================
+// LOADER MODEL
+// ==========================================
 
 const loader = new GLTFLoader();
 const modelPromises = new Map();
@@ -93,7 +94,7 @@ function loadModel(file, x, y, z, size, rotation = 0) {
         "./models/" + file,
         gltf => resolve(gltf.scene),
         undefined,
-        error => reject(error)
+        reject
       );
     });
 
@@ -137,9 +138,9 @@ function loadModel(file, x, y, z, size, rotation = 0) {
   });
 }
 
-// ======================================
-// OBJEK DASAR
-// ======================================
+// ==========================================
+// TANAH DAN OBJEK DASAR
+// ==========================================
 
 function makeBox(x, y, z, sx, sy, sz, color) {
   const object = new THREE.Mesh(
@@ -153,14 +154,11 @@ function makeBox(x, y, z, sx, sy, sz, color) {
   return object;
 }
 
-// ======================================
-// TANAH DAN JALAN
-// ======================================
-
 makeBox(0, -0.4, 0, 110, 0.5, 110, 0x65a84a);
 makeBox(0, -0.12, 5, 6, 0.08, 80, 0xb99a70);
 
 // Rumput tambahan
+
 const grassMaterial = new THREE.MeshLambertMaterial({
   color: 0x72b84d
 });
@@ -180,9 +178,9 @@ for (let i = 0; i < 35; i++) {
   scene.add(grass);
 }
 
-// ======================================
+// ==========================================
 // LAHAN TANAM
-// ======================================
+// ==========================================
 
 const plots = [];
 
@@ -201,38 +199,7 @@ for (let row = 0; row < 3; row++) {
     );
 
     plot.position.set(x, -0.02, z);
-    scene.add(
- // ======================================
- // PEMAIN 3D FARM LIFE INDONESIA
- // ======================================
-
-let player = new THREE.Group();
-scene.add(player);
-
-let farmerModel = null;
-
-async function loadFarmer() {
-  farmerModel = await loadModel(
-    "petani_farm_life.glb",
-    0,
-    0,
-    7,
-    2.4
-  );
-
-  if (farmerModel) {
-    scene.remove(player);
-    player = farmerModel;
-
-    // Menyesuaikan arah atas model
-    player.rotation.x = -Math.PI / 2;
-
-    message("Petani 3D berhasil dimuat! 🌾");
-  } else {
-    message("Model petani gagal dimuat. Periksa nama file.");
-  }
-}
-plot);
+    scene.add(plot);
 
     plots.push({
       x,
@@ -243,11 +210,158 @@ plot);
   }
 }
 
+// ==========================================
+// PEMAIN CADANGAN
+// ==========================================
 
+const player = new THREE.Group();
+scene.add(player);
 
-// ======================================
+player.position.set(0, 0, 7);
+
+function createFallbackFarmer() {
+  const group = new THREE.Group();
+
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.28, 0.4, 0.9, 10),
+    new THREE.MeshLambertMaterial({ color: 0x2877bc })
+  );
+
+  body.position.y = 1.1;
+  group.add(body);
+
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.32, 12, 10),
+    new THREE.MeshLambertMaterial({ color: 0xe8b58d })
+  );
+
+  head.position.y = 1.8;
+  group.add(head);
+
+  const hat = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.42, 0.42, 0.12, 12),
+    new THREE.MeshLambertMaterial({ color: 0xd9a747 })
+  );
+
+  hat.position.y = 2.13;
+  group.add(hat);
+
+  const legs = [];
+
+  for (const side of [-0.2, 0.2]) {
+    const leg = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.11, 0.13, 0.6, 8),
+      new THREE.MeshLambertMaterial({ color: 0x303b53 })
+    );
+
+    leg.position.set(side, 0.35, 0);
+    group.add(leg);
+    legs.push(leg);
+  }
+
+  group.userData.legs = legs;
+
+  return group;
+}
+
+// ==========================================
+// MEMUAT PETANI GLB BUATAN SENDIRI
+// ==========================================
+
+let farmerIsCustom = false;
+
+async function loadFarmer() {
+  return new Promise(resolve => {
+    loader.load(
+      "./models/petani_farm_life.glb",
+
+      gltf => {
+        const farmer = gltf.scene;
+
+        // Model buatan kita menggunakan sumbu Z sebagai atas.
+        // Putar agar berdiri tegak di Three.js.
+        farmer.rotation.x = -Math.PI / 2;
+
+        farmer.updateMatrixWorld(true);
+
+        // Hitung ukuran setelah diputar.
+        const bounds = new THREE.Box3().setFromObject(farmer);
+        const dimensions = new THREE.Vector3();
+        bounds.getSize(dimensions);
+
+        // Tinggi target karakter.
+        const targetHeight = 2.4;
+
+        if (dimensions.y > 0) {
+          farmer.scale.setScalar(targetHeight / dimensions.y);
+        }
+
+        farmer.updateMatrixWorld(true);
+
+        // Letakkan kaki tepat di atas tanah.
+        const finalBounds = new THREE.Box3().setFromObject(farmer);
+        const center = new THREE.Vector3();
+        finalBounds.getCenter(center);
+
+        farmer.position.set(
+          -center.x,
+          -finalBounds.min.y,
+          0
+        );
+
+        // Posisi awal petani.
+        farmer.position.x = 0;
+        farmer.position.z = 7;
+
+        // Hapus petani cadangan.
+        scene.remove(player);
+
+        // Gunakan petani GLB.
+        scene.add(farmer);
+
+        // Simpan referensi pemain.
+        player.position.copy(farmer.position);
+        player.rotation.copy(farmer.rotation);
+
+        // Pindahkan isi model ke group pemain
+        // agar kontrol gerak tetap sederhana.
+        farmer.position.set(0, 0, 0);
+
+        player.clear();
+        player.add(farmer);
+
+        player.position.set(0, 0, 7);
+        scene.add(player);
+
+        farmerIsCustom = true;
+
+        message("Petani 3D berhasil dimuat! 🌾");
+
+        resolve(true);
+      },
+
+      undefined,
+
+      error => {
+        console.error("Petani GLB gagal dimuat:", error);
+
+        // Tetap gunakan karakter cadangan.
+        const fallback = createFallbackFarmer();
+
+        player.add(fallback);
+        farmerIsCustom = false;
+
+        message("Menggunakan petani cadangan.");
+
+        resolve(false);
+      }
+    );
+  });
+}
+
+// ==========================================
 // STATUS PERMAINAN
-// ======================================
+// ==========================================
 
 let money = 500;
 let xp = 0;
@@ -260,12 +374,14 @@ function updateUI() {
 }
 
 function message(text) {
-  $("message").textContent = text;
+  if ($("message")) {
+    $("message").textContent = text;
+  }
 }
 
-// ======================================
+// ==========================================
 // MEMUAT MODEL DUNIA
-// ======================================
+// ==========================================
 
 async function buildFarm() {
   const models = [
@@ -315,9 +431,9 @@ async function buildFarm() {
   }
 }
 
-// ======================================
-// KONTROL KAMERA SENTUH
-// ======================================
+// ==========================================
+// KAMERA SENTUH: GESER DAN ZOOM
+// ==========================================
 
 const cameraPointers = new Map();
 let previousPinchDistance = 0;
@@ -378,7 +494,6 @@ canvas.addEventListener("pointermove", event => {
     return;
   }
 
-  // Geser kamera berdasarkan arah layar
   const right = new THREE.Vector3(1, 0, 0)
     .applyQuaternion(camera.quaternion);
 
@@ -415,9 +530,9 @@ function releaseCameraPointer(event) {
 canvas.addEventListener("pointerup", releaseCameraPointer);
 canvas.addEventListener("pointercancel", releaseCameraPointer);
 
-// ======================================
+// ==========================================
 // KONTROL KEYBOARD DAN TOMBOL HP
-// ======================================
+// ==========================================
 
 const keys = {};
 
@@ -447,9 +562,9 @@ document.querySelectorAll("[data-dir]").forEach(button => {
   button.addEventListener("lostpointercapture", release);
 });
 
-// ======================================
+// ==========================================
 // TANAM WORTEL
-// ======================================
+// ==========================================
 
 $("plantBtn").addEventListener("click", async () => {
   let nearest = null;
@@ -484,8 +599,8 @@ $("plantBtn").addEventListener("click", async () => {
 
   money -= 20;
   nearest.planted = true;
-  updateUI();
 
+  updateUI();
   message("Sedang menanam wortel...");
 
   nearest.crop = await loadModel(
@@ -503,9 +618,9 @@ $("plantBtn").addEventListener("click", async () => {
   );
 });
 
-// ======================================
+// ==========================================
 // PANEN
-// ======================================
+// ==========================================
 
 $("harvestBtn").addEventListener("click", () => {
   let nearest = null;
@@ -551,9 +666,9 @@ $("harvestBtn").addEventListener("click", () => {
   updateUI();
 });
 
-// ======================================
+// ==========================================
 // GERAK DAN ANIMASI PEMAIN
-// ======================================
+// ==========================================
 
 const clock = new THREE.Clock();
 
@@ -581,15 +696,37 @@ function animate() {
 
     player.rotation.y = Math.atan2(dx, dz);
 
-    legs[0].rotation.x =
-      Math.sin(clock.elapsedTime * 10) * 0.4;
+    // Gerakan naik turun ketika berjalan.
+    // Ini bukan animasi tulang atau sendi.
+    if (farmerIsCustom) {
+      player.position.y =
+        Math.abs(Math.sin(clock.elapsedTime * 9)) * 0.06;
+    } else {
+      player.position.y =
+        Math.abs(Math.sin(clock.elapsedTime * 9)) * 0.08;
 
-    legs[1].rotation.x =
-      -Math.sin(clock.elapsedTime * 10) * 0.4;
+      const fallback = player.children[0];
+      const legs = fallback?.userData?.legs || [];
+
+      if (legs.length === 2) {
+        legs[0].rotation.x =
+          Math.sin(clock.elapsedTime * 10) * 0.4;
+
+        legs[1].rotation.x =
+          -Math.sin(clock.elapsedTime * 10) * 0.4;
+      }
+    }
   } else {
-    legs.forEach(leg => {
-      leg.rotation.x = 0;
-    });
+    player.position.y = 0;
+
+    if (!farmerIsCustom) {
+      const fallback = player.children[0];
+      const legs = fallback?.userData?.legs || [];
+
+      legs.forEach(leg => {
+        leg.rotation.x = 0;
+      });
+    }
   }
 
   player.position.x = THREE.MathUtils.clamp(
@@ -603,9 +740,9 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-// ======================================
+// ==========================================
 // UKURAN LAYAR
-// ======================================
+// ==========================================
 
 window.addEventListener("resize", () => {
   const aspect = window.innerWidth / window.innerHeight;
@@ -623,9 +760,9 @@ window.addEventListener("resize", () => {
   );
 });
 
-// ======================================
+// ==========================================
 // MULAI GAME
-// ======================================
+// ==========================================
 
 async function startGame() {
   updateUI();
@@ -634,7 +771,11 @@ async function startGame() {
   try {
     await buildFarm();
 
-    loading.style.display = "none";
+    await loadFarmer();
+
+    if (loading) {
+      loading.style.display = "none";
+    }
 
     message("Selamat datang di Farm Life Indonesia! 🌾");
 
@@ -644,7 +785,7 @@ async function startGame() {
 
     if (loadingText) {
       loadingText.textContent =
-        "Gagal memuat game. Periksa koneksi internet dan file model.";
+        "Gagal memuat game. Periksa koneksi dan file model.";
     }
   }
 }
