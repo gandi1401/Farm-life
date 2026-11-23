@@ -3,8 +3,8 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.m
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
 
 // ==========================================
-// FARM LIFE INDONESIA 5.0
-// CUSTOM 3D FARMER
+// FARM LIFE INDONESIA 5.1
+// CUSTOM 3D FARMER FIX
 // ==========================================
 
 const $ = id => document.getElementById(id);
@@ -154,7 +154,7 @@ function makeBox(x, y, z, sx, sy, sz, color) {
   return object;
 }
 
-makeBox(0, -0.4, 0, 110, 0.5, 110, 0x65a84a);
+makeBox(0, -0.4, 0, 110, 0.5, 110);
 makeBox(0, -0.12, 5, 6, 0.08, 80, 0xb99a70);
 
 // Rumput tambahan
@@ -278,60 +278,49 @@ async function loadFarmer() {
       gltf => {
         const farmer = gltf.scene;
 
-        // Model buatan kita menggunakan sumbu Z sebagai atas.
-        // Putar agar berdiri tegak di Three.js.
-        farmer.rotation.x = -Math.PI / 2;
+        // Model dibuat dengan Z sebagai sumbu atas.
+        // Putar sekali agar Y menjadi sumbu atas.
+        farmer.rotation.set(-Math.PI / 2, 0, 0);
 
         farmer.updateMatrixWorld(true);
 
-        // Hitung ukuran setelah diputar.
+        // Hitung ukuran model setelah diputar.
         const bounds = new THREE.Box3().setFromObject(farmer);
         const dimensions = new THREE.Vector3();
+
         bounds.getSize(dimensions);
 
-        // Tinggi target karakter.
+        // Tinggi karakter yang diinginkan.
         const targetHeight = 2.4;
 
         if (dimensions.y > 0) {
-          farmer.scale.setScalar(targetHeight / dimensions.y);
+          farmer.scale.setScalar(
+            targetHeight / dimensions.y
+          );
         }
 
         farmer.updateMatrixWorld(true);
 
-        // Letakkan kaki tepat di atas tanah.
+        // Hitung ulang batas model setelah diskalakan.
         const finalBounds = new THREE.Box3().setFromObject(farmer);
         const center = new THREE.Vector3();
+
         finalBounds.getCenter(center);
 
+        // Atur pusat dan kaki model.
+        // Kaki berada pada permukaan tanah Y = 0.
         farmer.position.set(
           -center.x,
           -finalBounds.min.y,
-          0
+          -center.z
         );
 
-        // Posisi awal petani.
-        farmer.position.x = 0;
-        farmer.position.z = 7;
-
-        // Hapus petani cadangan.
-        scene.remove(player);
-
-        // Gunakan petani GLB.
-        scene.add(farmer);
-
-        // Simpan referensi pemain.
-        player.position.copy(farmer.position);
-        player.rotation.copy(farmer.rotation);
-
-        // Pindahkan isi model ke group pemain
-        // agar kontrol gerak tetap sederhana.
-        farmer.position.set(0, 0, 0);
-
+        // Masukkan model ke dalam group pemain.
+        // Jangan menyalin rotasi model ke player.
         player.clear();
-        player.add(farmer);
-
+        player.rotation.set(0, 0, 0);
         player.position.set(0, 0, 7);
-        scene.add(player);
+        player.add(farmer);
 
         farmerIsCustom = true;
 
@@ -345,10 +334,15 @@ async function loadFarmer() {
       error => {
         console.error("Petani GLB gagal dimuat:", error);
 
-        // Tetap gunakan karakter cadangan.
-        const fallback = createFallbackFarmer();
+        // Gunakan karakter cadangan.
+        player.clear();
 
+        const fallback = createFallbackFarmer();
         player.add(fallback);
+
+        player.position.set(0, 0, 7);
+        player.rotation.set(0, 0, 0);
+
         farmerIsCustom = false;
 
         message("Menggunakan petani cadangan.");
@@ -696,8 +690,8 @@ function animate() {
 
     player.rotation.y = Math.atan2(dx, dz);
 
-    // Gerakan naik turun ketika berjalan.
-    // Ini bukan animasi tulang atau sendi.
+    // Gerakan naik turun sederhana.
+    // Model GLB belum memiliki animasi tulang.
     if (farmerIsCustom) {
       player.position.y =
         Math.abs(Math.sin(clock.elapsedTime * 9)) * 0.06;
