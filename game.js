@@ -201,7 +201,38 @@ for (let row = 0; row < 3; row++) {
     );
 
     plot.position.set(x, -0.02, z);
-    scene.add(plot);
+    scene.add(
+ // ======================================
+ // PEMAIN 3D FARM LIFE INDONESIA
+ // ======================================
+
+let player = new THREE.Group();
+scene.add(player);
+
+let farmerModel = null;
+
+async function loadFarmer() {
+  farmerModel = await loadModel(
+    "petani_farm_life.glb",
+    0,
+    0,
+    7,
+    2.4
+  );
+
+  if (farmerModel) {
+    scene.remove(player);
+    player = farmerModel;
+
+    // Menyesuaikan arah atas model
+    player.rotation.x = -Math.PI / 2;
+
+    message("Petani 3D berhasil dimuat! 🌾");
+  } else {
+    message("Model petani gagal dimuat. Periksa nama file.");
+  }
+}
+plot);
 
     plots.push({
       x,
@@ -212,51 +243,7 @@ for (let row = 0; row < 3; row++) {
   }
 }
 
-// ======================================
-// PEMAIN
-// ======================================
 
-const player = new THREE.Group();
-
-const farmerBody = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.28, 0.4, 0.9, 10),
-  new THREE.MeshLambertMaterial({ color: 0x2877bc })
-);
-
-farmerBody.position.y = 1.1;
-player.add(farmerBody);
-
-const farmerHead = new THREE.Mesh(
-  new THREE.SphereGeometry(0.32, 12, 10),
-  new THREE.MeshLambertMaterial({ color: 0xe8b58d })
-);
-
-farmerHead.position.y = 1.8;
-player.add(farmerHead);
-
-const farmerHat = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.42, 0.42, 0.12, 12),
-  new THREE.MeshLambertMaterial({ color: 0xd9a747 })
-);
-
-farmerHat.position.y = 2.13;
-player.add(farmerHat);
-
-const legs = [];
-
-for (const side of [-0.2, 0.2]) {
-  const leg = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.11, 0.13, 0.6, 8),
-    new THREE.MeshLambertMaterial({ color: 0x303b53 })
-  );
-
-  leg.position.set(side, 0.35, 0);
-  player.add(leg);
-  legs.push(leg);
-}
-
-player.position.set(0, 0, 7);
-scene.add(player);
 
 // ======================================
 // STATUS PERMAINAN
