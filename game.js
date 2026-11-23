@@ -1,133 +1,174 @@
 
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
+import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
 
-// FARM LIFE INDONESIA 2.0
+// FARM LIFE INDONESIA 3.0
 const game = document.getElementById("game");
+const loading = document.getElementById("loading");
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x91d5f2);
-scene.fog = new THREE.Fog(0x91d5f2, 35, 90);
+scene.background = new THREE.Color(0x9bd8f2);
+scene.fog = new THREE.Fog(0x9bd8f2, 55, 130);
 
 const camera = new THREE.PerspectiveCamera(
-  60, window.innerWidth / window.innerHeight, 0.1, 150
+  60, window.innerWidth / window.innerHeight, 0.1, 200
 );
 
 const renderer = new THREE.WebGLRenderer({
   antialias: false,
   powerPreference: "low-power"
 });
-
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.3));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
 renderer.shadowMap.enabled = false;
-renderer.domElement.style.position = "absolute";
-renderer.domElement.style.inset = "0";
-renderer.domElement.style.zIndex = "0";
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 game.prepend(renderer.domElement);
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0x607744, 2));
+scene.add(new THREE.HemisphereLight(0xffffff, 0x657b42, 2));
 
 const sun = new THREE.DirectionalLight(0xffffff, 2);
-sun.position.set(15, 25, 10);
+sun.position.set(20, 35, 15);
 scene.add(sun);
 
-function mat(color) {
+const loader = new GLTFLoader();
+const modelCache = {};
+
+function material(color) {
   return new THREE.MeshLambertMaterial({ color });
 }
 
-const grass = mat(0x58a843);
-const darkGrass = mat(0x347a35);
-const soil = mat(0x79502e);
-const wood = mat(0x80502d);
-
-function box(x, y, z, sx, sy, sz, material) {
-  const obj = new THREE.Mesh(
-    new THREE.BoxGeometry(sx, sy, sz), material
+function ground(x, y, z, sx, sy, sz, color) {
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(sx, sy, sz),
+    material(color)
   );
-  obj.position.set(x, y, z);
-  scene.add(obj);
-  return obj;
+  mesh.position.set(x, y, z);
+  scene.add(mesh);
+  return mesh;
 }
 
-function sphere(x, y, z, size, material) {
-  const obj = new THREE.Mesh(
-    new THREE.SphereGeometry(size, 8, 7), material
-  );
-  obj.position.set(x, y, z);
-  scene.add(obj);
-  return obj;
-}
-
-// TANAH DAN JALAN
-box(0, -0.4, 0, 100, 0.5, 100, grass);
-box(0, -0.1, 4, 5, 0.08, 65, mat(0xb99565));
-
-// RUMAH PETANI
-box(-8, 1, -9, 7, 2, 6, mat(0xe7c99a));
-box(-8, 2.5, -9, 8, 1.2, 7, mat(0x9c4230));
-box(-8, 0.8, -5.9, 1.2, 1.6, 0.15, wood);
-box(-5.7, 1.2, -5.85, 1.2, 0.8, 0.15, mat(0x77c7e8));
-
-// POHON
-function tree(x, z, s = 1) {
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.2*s, 0.35*s, 2*s, 7),
-    wood
-  );
-  trunk.position.set(x, s, z);
-  scene.add(trunk);
-
-  sphere(x, 2.5*s, z, 1.4*s, darkGrass);
-  sphere(x-0.6*s, 2.2*s, z+0.2*s, 0.9*s, mat(0x438d39));
-  sphere(x+0.6*s, 2.3*s, z-0.2*s, 0.9*s, mat(0x4b983d));
-}
-
-for (let i = 0; i < 35; i++) {
-  const x = (Math.random() - 0.5) * 65;
-  const z = (Math.random() - 0.5) * 65;
-  if (Math.abs(x) < 13 && Math.abs(z) < 15) continue;
-  tree(x, z, 0.8 + Math.random() * 0.6);
-}
-
-// KANDANG
-box(9, 0.8, -9, 7, 1.5, 6, wood);
-box(9, 1.7, -9, 7.5, 0.35, 6.5, mat(0x57351f));
-
-// KAMBING SEDERHANA
-function goat(x, z) {
-  const body = sphere(x, 0.9, z, 0.65, mat(0xf1eee2));
-  body.scale.set(1.3, 0.8, 0.8);
-  sphere(x+0.55, 1.1, z, 0.32, mat(0xf1eee2));
-  for (const dx of [-0.35, 0.35]) {
-    for (const dz of [-0.3, 0.3]) {
-      box(x+dx, 0.35, z+dz, 0.12, 0.65, 0.12, wood);
+// MEMUAT MODEL GLB
+function loadModel(file, x, y, z, size, rotation = 0) {
+  return new Promise((resolve) => {
+    if (modelCache[file]) {
+      const obj = modelCache[file].clone(true);
+      placeModel(obj, x, y, z, size, rotation);
+      resolve(obj);
+      return;
     }
+
+    loader.load(
+      "models/" + file,
+      (gltf) => {
+        const original = gltf.scene;
+        modelCache[file] = original;
+        const obj = original.clone(true);
+        placeModel(obj, x, y, z, size, rotation);
+        resolve(obj);
+      },
+      undefined,
+      (error) => {
+        console.error("Gagal memuat model:", file, error);
+        resolve(null);
+      }
+    );
+  });
+}
+
+function placeModel(obj, x, y, z, size, rotation) {
+  const box = new THREE.Box3().setFromObject(obj);
+  const dimensions = new THREE.Vector3();
+  box.getSize(dimensions);
+
+  const maxDimension = Math.max(
+    dimensions.x, dimensions.y, dimensions.z
+  );
+
+  if (maxDimension > 0) {
+    obj.scale.setScalar(size / maxDimension);
   }
-}
-goat(8, -7);
-goat(10, -10);
-goat(7, -11);
 
-// AYAM
-function chicken(x, z) {
-  sphere(x, 0.45, z, 0.35, white);
-  sphere(x+0.25, 0.65, z, 0.18, white);
-  sphere(x+0.4, 0.7, z, 0.07, mat(0xffaa00));
-  sphere(x+0.25, 0.85, z, 0.08, mat(0xd92e22));
-}
-const white = mat(0xffffff);
-chicken(12, -6);
-chicken(14, -9);
-chicken(11, -12);
+  obj.updateMatrixWorld(true);
 
-// KEBUN
+  const newBox = new THREE.Box3().setFromObject(obj);
+  obj.position.x = x - (newBox.min.x + newBox.max.x) / 2;
+  obj.position.y = y - newBox.min.y;
+  obj.position.z = z - (newBox.min.z + newBox.max.z) / 2;
+  obj.rotation.y = rotation;
+
+  scene.add(obj);
+}
+
+// LINGKUNGAN
+ground(0, -0.4, 0, 110, 0.5, 110, 0x65a84a);
+ground(0, -0.12, 5, 6, 0.08, 80, 0xb99a70);
+
+// RUMAH, GUDANG DAN BANGUNAN
+loadModel("red-gambrel-barn.glb", -10, 0, -12, 12);
+loadModel("low-poly-grain-silo.glb", 1, 0, -16, 7);
+loadModel("garden-greenhouse.glb", 12, 0, -13, 9);
+
+// KENDARAAN
+loadModel("farm-tractor-and-hay-trailer.glb", -12, 0, 5, 7, Math.PI);
+
+// HEWAN
+loadModel("chunky-low-poly-cow.glb", 8, 0, -9, 3);
+loadModel("chunky-low-poly-cow.glb", 12, 0, -10, 3);
+loadModel("chunky-cloud-sheep.glb", 17, 0, -8, 3);
+loadModel("chunky-pig-with-apples.glb", 20, 0, -12, 3);
+
+// KANDANG DAN KOLAM
+loadModel("low-poly-chicken-coop.glb", 15, 0, 2, 6);
+loadModel("low-poly-duck-pond.glb", 23, 0, 5, 7);
+loadModel("low-poly-farm-birds.glb", 17, 0, 5, 3);
+
+// PERLENGKAPAN
+loadModel("farm-water-pump.glb", -3, 0, -5, 3);
+loadModel("harvest-wheelbarrow.glb", -5, 0, 3, 3);
+loadModel("low-poly-farm-tools.glb", -7, 0, 2, 3);
+loadModel("farm-produce-crates.glb", 2, 0, 1, 3);
+loadModel("low-poly-beehive-set.glb", 26, 0, -12, 4);
+
+// PAGAR
+loadModel("wooden-fence-kit.glb", 8, 0, -15, 10);
+
+// POHON BUAH
+const treePositions = [
+  [-22, -15], [-25, -5], [-22, 8],
+  [28, -17], [30, -5], [28, 12],
+  [-20, 20], [24, 23]
+];
+
+for (const [x, z] of treePositions) {
+  loadModel("low-poly-fruit-trees.glb", x, 0, z, 5);
+}
+
+// TAMAN DAN TANAMAN
+loadModel("apple-tree-growth-stages.glb", -25, 0, 15, 4);
+loadModel("sunflower-growth-stages.glb", -16, 0, 19, 4);
+
+// LAHAN
 const plots = [];
+const soil = material(0x79502e);
+
 for (let i = 0; i < 3; i++) {
   for (let j = 0; j < 3; j++) {
-    const x = 5 + j * 2.5;
-    const z = 3 + i * 2.5;
-    box(x, -0.02, z, 2.1, 0.12, 2.1, soil);
-    plots.push({ x, z, planted: false, crop: null });
+    const x = 4 + j * 2.6;
+    const z = 10 + i * 2.6;
+
+    const plot = new THREE.Mesh(
+      new THREE.BoxGeometry(2.2, 0.15, 2.2),
+      soil
+    );
+
+    plot.position.set(x, -0.02, z);
+    scene.add(plot);
+
+    plots.push({
+      x, z,
+      planted: false,
+      crop: null
+    });
   }
 }
 
@@ -135,31 +176,32 @@ for (let i = 0; i < 3; i++) {
 const player = new THREE.Group();
 
 const body = new THREE.Mesh(
-  new THREE.BoxGeometry(0.8, 1, 0.5),
-  mat(0x2584ce)
+  new THREE.CylinderGeometry(0.28, 0.4, 0.9, 10),
+  material(0x2877bc)
 );
 body.position.y = 1.1;
 player.add(body);
 
 const head = new THREE.Mesh(
-  new THREE.SphereGeometry(0.38, 10, 8),
-  mat(0xf0c39b)
+  new THREE.SphereGeometry(0.32, 12, 10),
+  material(0xe8b58d)
 );
-head.position.y = 1.9;
+head.position.y = 1.8;
 player.add(head);
 
 const hat = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.5, 0.5, 0.13, 10),
-  mat(0xd5a54c)
+  new THREE.CylinderGeometry(0.42, 0.42, 0.12, 12),
+  material(0xd9a747)
 );
-hat.position.y = 2.3;
+hat.position.y = 2.13;
 player.add(hat);
 
 const legs = [];
-for (const side of [-0.22, 0.22]) {
+
+for (const side of [-0.2, 0.2]) {
   const leg = new THREE.Mesh(
-    new THREE.BoxGeometry(0.23, 0.6, 0.25),
-    mat(0x303b53)
+    new THREE.CylinderGeometry(0.11, 0.13, 0.6, 8),
+    material(0x303b53)
   );
   leg.position.set(side, 0.35, 0);
   player.add(leg);
@@ -170,7 +212,7 @@ player.position.set(0, 0, 7);
 scene.add(player);
 
 // KAMERA
-camera.position.set(0, 8, 16);
+camera.position.set(0, 8, 17);
 camera.lookAt(player.position);
 
 // STATUS
@@ -215,7 +257,7 @@ document.querySelectorAll("[data-dir]").forEach(button => {
 });
 
 // TANAM
-document.getElementById("plantBtn").onclick = () => {
+document.getElementById("plantBtn").onclick = async () => {
   let nearest = null;
   let distance = Infinity;
 
@@ -224,6 +266,7 @@ document.getElementById("plantBtn").onclick = () => {
       player.position.x - plot.x,
       player.position.z - plot.z
     );
+
     if (d < distance) {
       distance = d;
       nearest = plot;
@@ -231,7 +274,7 @@ document.getElementById("plantBtn").onclick = () => {
   });
 
   if (distance > 3) {
-    message("Dekati kebun terlebih dahulu!");
+    message("Dekati lahan terlebih dahulu!");
     return;
   }
 
@@ -248,15 +291,13 @@ document.getElementById("plantBtn").onclick = () => {
   money -= 20;
   nearest.planted = true;
 
-  const crop = new THREE.Mesh(
-    new THREE.ConeGeometry(0.4, 1, 6),
-    mat(0x238b35)
+  const crop = await loadModel(
+    "carrot-growth-stages.glb",
+    nearest.x, 0.05, nearest.z, 1.8
   );
-  crop.position.set(nearest.x, 0.5, nearest.z);
-  scene.add(crop);
-  nearest.crop = crop;
 
-  message("Berhasil menanam! 🌱");
+  nearest.crop = crop;
+  message("Berhasil menanam wortel! 🥕");
   updateUI();
 };
 
@@ -267,10 +308,12 @@ document.getElementById("harvestBtn").onclick = () => {
 
   plots.forEach(plot => {
     if (!plot.planted) return;
+
     const d = Math.hypot(
       player.position.x - plot.x,
       player.position.z - plot.z
     );
+
     if (d < distance) {
       distance = d;
       nearest = plot;
@@ -282,7 +325,10 @@ document.getElementById("harvestBtn").onclick = () => {
     return;
   }
 
-  scene.remove(nearest.crop);
+  if (nearest.crop) {
+    scene.remove(nearest.crop);
+  }
+
   nearest.crop = null;
   nearest.planted = false;
 
@@ -292,19 +338,22 @@ document.getElementById("harvestBtn").onclick = () => {
   if (xp >= level * 100) {
     xp = 0;
     level++;
-    message("Selamat! Naik level 🎉");
+    message("Selamat! Naik level! 🎉");
   } else {
     message("Panen berhasil! +100 koin 🌾");
   }
+
   updateUI();
 };
 
-// ANIMASI DAN GERAK
+// GERAK DAN ANIMASI
 const clock = new THREE.Clock();
 
 function animate() {
   requestAnimationFrame(animate);
+
   const delta = Math.min(clock.getDelta(), 0.05);
+
   let dx = 0;
   let dz = 0;
 
@@ -320,23 +369,25 @@ function animate() {
 
     player.position.x += dx * 5 * delta;
     player.position.z += dz * 5 * delta;
+
     player.rotation.y = Math.atan2(dx, dz);
 
-    legs[0].rotation.x = Math.sin(clock.elapsedTime * 10) * 0.5;
-    legs[1].rotation.x = -Math.sin(clock.elapsedTime * 10) * 0.5;
+    legs[0].rotation.x = Math.sin(clock.elapsedTime * 10) * 0.4;
+    legs[1].rotation.x = -Math.sin(clock.elapsedTime * 10) * 0.4;
   } else {
     legs.forEach(leg => leg.rotation.x = 0);
   }
 
-  player.position.x = THREE.MathUtils.clamp(player.position.x, -35, 35);
-  player.position.z = THREE.MathUtils.clamp(player.position.z, -35, 35);
+  player.position.x = THREE.MathUtils.clamp(player.position.x, -40, 40);
+  player.position.z = THREE.MathUtils.clamp(player.position.z, -40, 40);
 
   camera.position.lerp(
     new THREE.Vector3(
       player.position.x,
       player.position.y + 8,
-      player.position.z + 12
-    ), 0.08
+      player.position.z + 13
+    ),
+    0.08
   );
 
   camera.lookAt(
@@ -355,5 +406,6 @@ window.addEventListener("resize", () => {
 });
 
 updateUI();
-document.getElementById("loading").style.display = "none";
+loading.style.display = "none";
+message("Selamat datang di Farm Life Indonesia 3.0!");
 animate();
