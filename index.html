@@ -4,48 +4,162 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#254b2b">
   <title>Farm Life Indonesia</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
 
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background: #9bd8f2;
+      color: white;
+      touch-action: none;
+    }
+    #game {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+    #game canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    #loading {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      background: #254b2b;
+      text-align: center;
+      padding: 20px;
+    }
+    #loading h2 { margin-bottom: 8px; }
+    #loading p { font-size: 14px; }
+    #hud {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 5;
+      background: #142b20d9;
+      padding: 10px 14px;
+      border-radius: 12px;
+      line-height: 1.8;
+      font-size: 14px;
+    }
+    #message {
+      position: fixed;
+      top: 110px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      background: #142b20d9;
+      padding: 9px 15px;
+      border-radius: 20px;
+      font-size: 13px;
+      text-align: center;
+      max-width: 90%;
+    }
+    #controls {
+      position: fixed;
+      bottom: 18px;
+      left: 15px;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: repeat(3, 52px);
+      grid-template-rows: repeat(2, 52px);
+      gap: 5px;
+    }
+    button {
+      border: 0;
+      border-radius: 12px;
+      background: #244b2cdd;
+      color: white;
+      font-size: 19px;
+      font-weight: bold;
+      padding: 10px;
+      touch-action: none;
+    }
+    button:active { background: #5c9c45; }
+    #up { grid-column: 2; }
+    #left { grid-column: 1; grid-row: 2; }
+    #down { grid-column: 2; grid-row: 2; }
+    #right { grid-column: 3; grid-row: 2; }
+    #actions {
+      position: fixed;
+      right: 14px;
+      bottom: 25px;
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    #actions button {
+      min-width: 100px;
+      font-size: 14px;
+      background: #805323eF;
+    }
+    #help {
+      position: fixed;
+      right: 12px;
+      top: 12px;
+      z-index: 5;
+      background: #142b20d9;
+      border-radius: 10px;
+      padding: 8px;
+      font-size: 11px;
+    }
+    @media (max-width: 380px) {
+      #hud { font-size: 12px; padding: 7px; }
+      #controls { grid-template-columns: repeat(3, 45px); grid-template-rows: repeat(2, 45px); }
+      #actions button { min-width: 85px; font-size: 12px; }
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+    }
+  }
+  </script>
+</head>
+
+<body>
   <div id="game"></div>
 
-  <div id="loading">🌾 Memuat dunia pertanian...</div>
-
-  <div class="topbar">
-    <div class="brand">🌾 FARM LIFE INDONESIA</div>
-    <div class="stats">
-      <span>🪙 <b id="money">500</b></span>
-      <span>⭐ Lv. <b id="level">1</b></span>
-      <span>✨ <b id="xp">0</b> XP</span>
-    </div>
+  <div id="loading">
+    <h2>🌾 Farm Life Indonesia</h2>
+    <p id="loadingText">Memuat dunia pertanian...</p>
   </div>
 
-  <div class="message" id="message">
-    Selamat datang di pertanianmu!
+  <div id="hud">
+    💰 Uang: <span id="money">500</span><br>
+    ⭐ XP: <span id="xp">0</span><br>
+    🏆 Level: <span id="level">1</span>
   </div>
 
-  <div class="controls">
-    <div class="movement">
-      <button data-dir="up">▲</button>
-      <div class="middle">
-        <button data-dir="left">◀</button>
-        <button data-dir="down">▼</button>
-        <button data-dir="right">▶</button>
-      </div>
-    </div>
+  <div id="message">Selamat datang di pertanian!</div>
 
-    <div class="actions">
-      <button id="plantBtn">🌱<small>Tanam</small></button>
-      <button id="harvestBtn">🌾<small>Panen</small></button>
-    </div>
+  <div id="help">Gunakan tombol untuk bergerak</div>
+
+  <div id="controls">
+    <button id="up" data-dir="up">▲</button>
+    <button id="left" data-dir="left">◀</button>
+    <button id="down" data-dir="down">▼</button>
+    <button id="right" data-dir="right">▶</button>
   </div>
 
-  <div class="help">
-    Gerakkan petani dengan tombol arah atau WASD. Dekati lahan untuk menanam dan memanen.
+  <div id="actions">
+    <button id="plantBtn">🌱 TANAM</button>
+    <button id="harvestBtn">🌾 PANEN</button>
   </div>
 
-  <script type="module" src="game.js"></script>
+  <script type="module" src="./game.js"></script>
 </body>
 </html>
