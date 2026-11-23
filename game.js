@@ -2,22 +2,51 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js";
 
-// =====================================
-// FARM LIFE INDONESIA 3.0
-// =====================================
+// ======================================
+// FARM LIFE INDONESIA 4.0
+// ISOMETRIC FARMING & BUILDING
+// ======================================
 
 const $ = id => document.getElementById(id);
+
 const game = $("game");
 const loading = $("loading");
 const loadingText = $("loadingText");
 
+if (!game) throw new Error("Elemen game tidak ditemukan");
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x9bd8f2);
-scene.fog = new THREE.Fog(0x9bd8f2, 65, 150);
+scene.fog = new THREE.Fog(0x9bd8f2, 90, 190);
 
-const camera = new THREE.PerspectiveCamera(
-  60, window.innerWidth / window.innerHeight, 0.1, 250
+// ======================================
+// KAMERA ISOMETRIK
+// ======================================
+
+const viewHeight = 60;
+const camera = new THREE.OrthographicCamera(
+  -viewHeight * window.innerWidth / window.innerHeight / 2,
+  viewHeight * window.innerWidth / window.innerHeight / 2,
+  viewHeight / 2,
+  -viewHeight / 2,
+  0.1,
+  300
 );
+
+const cameraTarget = new THREE.Vector3(0, 0, 0);
+const cameraOffset = new THREE.Vector3(32, 38, 32);
+
+function updateCamera() {
+  camera.position.copy(cameraTarget).add(cameraOffset);
+  camera.lookAt(cameraTarget);
+  camera.updateProjectionMatrix();
+}
+
+updateCamera();
+
+// ======================================
+// RENDERER
+// ======================================
 
 const renderer = new THREE.WebGLRenderer({
   antialias: false,
@@ -28,16 +57,30 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = false;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+
 game.appendChild(renderer.domElement);
 
-// CAHAYA
-scene.add(new THREE.HemisphereLight(0xffffff, 0x637d45, 2));
+const canvas = renderer.domElement;
+canvas.style.touchAction = "none";
+
+// ======================================
+// PENCAHAYAAN
+// ======================================
+
+scene.add(
+  new THREE.HemisphereLight(0xffffff, 0x637d45, 2)
+);
 
 const sunlight = new THREE.DirectionalLight(0xffffff, 2);
 sunlight.position.set(25, 40, 20);
 scene.add(sunlight);
 
-// LOADER GLB
+// ======================================
+// LOADER MODEL GLB
+// ======================================
+
 const loader = new GLTFLoader();
 const modelPromises = new Map();
 
@@ -53,6 +96,7 @@ function loadModel(file, x, y, z, size, rotation = 0) {
         error => reject(error)
       );
     });
+
     modelPromises.set(file, promise);
   }
 
@@ -64,7 +108,9 @@ function loadModel(file, x, y, z, size, rotation = 0) {
     bounds.getSize(dimensions);
 
     const largest = Math.max(
-      dimensions.x, dimensions.y, dimensions.z
+      dimensions.x,
+      dimensions.y,
+      dimensions.z
     );
 
     if (largest > 0) {
@@ -91,23 +137,55 @@ function loadModel(file, x, y, z, size, rotation = 0) {
   });
 }
 
+// ======================================
 // OBJEK DASAR
+// ======================================
+
 function makeBox(x, y, z, sx, sy, sz, color) {
   const object = new THREE.Mesh(
     new THREE.BoxGeometry(sx, sy, sz),
     new THREE.MeshLambertMaterial({ color })
   );
+
   object.position.set(x, y, z);
   scene.add(object);
+
   return object;
 }
 
+// ======================================
 // TANAH DAN JALAN
+// ======================================
+
 makeBox(0, -0.4, 0, 110, 0.5, 110, 0x65a84a);
 makeBox(0, -0.12, 5, 6, 0.08, 80, 0xb99a70);
 
+// Rumput tambahan
+const grassMaterial = new THREE.MeshLambertMaterial({
+  color: 0x72b84d
+});
+
+for (let i = 0; i < 35; i++) {
+  const grass = new THREE.Mesh(
+    new THREE.BoxGeometry(1.5, 0.03, 1.5),
+    grassMaterial
+  );
+
+  grass.position.set(
+    Math.random() * 90 - 45,
+    -0.12,
+    Math.random() * 90 - 45
+  );
+
+  scene.add(grass);
+}
+
+// ======================================
 // LAHAN TANAM
+// ======================================
+
 const plots = [];
+
 const soilMaterial = new THREE.MeshLambertMaterial({
   color: 0x79502e
 });
@@ -126,20 +204,25 @@ for (let row = 0; row < 3; row++) {
     scene.add(plot);
 
     plots.push({
-      x, z,
+      x,
+      z,
       planted: false,
       crop: null
     });
   }
 }
 
+// ======================================
 // PEMAIN
+// ======================================
+
 const player = new THREE.Group();
 
 const farmerBody = new THREE.Mesh(
   new THREE.CylinderGeometry(0.28, 0.4, 0.9, 10),
   new THREE.MeshLambertMaterial({ color: 0x2877bc })
 );
+
 farmerBody.position.y = 1.1;
 player.add(farmerBody);
 
@@ -147,6 +230,7 @@ const farmerHead = new THREE.Mesh(
   new THREE.SphereGeometry(0.32, 12, 10),
   new THREE.MeshLambertMaterial({ color: 0xe8b58d })
 );
+
 farmerHead.position.y = 1.8;
 player.add(farmerHead);
 
@@ -154,6 +238,7 @@ const farmerHat = new THREE.Mesh(
   new THREE.CylinderGeometry(0.42, 0.42, 0.12, 12),
   new THREE.MeshLambertMaterial({ color: 0xd9a747 })
 );
+
 farmerHat.position.y = 2.13;
 player.add(farmerHat);
 
@@ -173,11 +258,10 @@ for (const side of [-0.2, 0.2]) {
 player.position.set(0, 0, 7);
 scene.add(player);
 
-// KAMERA AWAL
-camera.position.set(0, 8, 20);
-camera.lookAt(player.position);
-
+// ======================================
 // STATUS PERMAINAN
+// ======================================
+
 let money = 500;
 let xp = 0;
 let level = 1;
@@ -192,7 +276,10 @@ function message(text) {
   $("message").textContent = text;
 }
 
+// ======================================
 // MEMUAT MODEL DUNIA
+// ======================================
+
 async function buildFarm() {
   const models = [
     ["red-gambrel-barn.glb", -10, 0, -12, 12],
@@ -204,7 +291,6 @@ async function buildFarm() {
     ["chunky-low-poly-cow.glb", 12, 0, -10, 3],
     ["chunky-cloud-sheep.glb", 17, 0, -8, 3],
     ["chunky-pig-with-apples.glb", 20, 0, -12, 3],
-
     ["low-poly-chicken-coop.glb", 15, 0, 2, 6],
     ["low-poly-duck-pond.glb", 23, 0, 5, 7],
     ["low-poly-farm-birds.glb", 17, 0, 5, 3],
@@ -216,7 +302,6 @@ async function buildFarm() {
     ["low-poly-beehive-set.glb", 26, 0, -12, 4],
 
     ["wooden-fence-kit.glb", 8, 0, -15, 10],
-
     ["low-poly-fruit-trees.glb", -22, 0, -15, 5],
     ["low-poly-fruit-trees.glb", -25, 0, -5, 5],
     ["low-poly-fruit-trees.glb", -22, 0, 8, 5],
@@ -230,17 +315,123 @@ async function buildFarm() {
 
   let completed = 0;
 
-  const tasks = models.map(async item => {
+  for (const item of models) {
     await loadModel(...item);
-    completed++;
-    loadingText.textContent =
-      "Memuat model pertanian " + completed + "/" + models.length;
-  });
 
-  await Promise.all(tasks);
+    completed++;
+
+    if (loadingText) {
+      loadingText.textContent =
+        "Memuat model pertanian " +
+        completed + "/" + models.length;
+    }
+  }
 }
 
-// KONTROL KEYBOARD DAN HP
+// ======================================
+// KONTROL KAMERA SENTUH
+// ======================================
+
+const cameraPointers = new Map();
+let previousPinchDistance = 0;
+
+function pinchDistance() {
+  const points = [...cameraPointers.values()];
+
+  if (points.length < 2) return 0;
+
+  return Math.hypot(
+    points[0].x - points[1].x,
+    points[0].y - points[1].y
+  );
+}
+
+canvas.addEventListener("pointerdown", event => {
+  cameraPointers.set(event.pointerId, {
+    x: event.clientX,
+    y: event.clientY
+  });
+
+  canvas.setPointerCapture(event.pointerId);
+
+  if (cameraPointers.size === 2) {
+    previousPinchDistance = pinchDistance();
+  }
+});
+
+canvas.addEventListener("pointermove", event => {
+  if (!cameraPointers.has(event.pointerId)) return;
+
+  const previous = cameraPointers.get(event.pointerId);
+
+  const dx = event.clientX - previous.x;
+  const dy = event.clientY - previous.y;
+
+  cameraPointers.set(event.pointerId, {
+    x: event.clientX,
+    y: event.clientY
+  });
+
+  if (cameraPointers.size >= 2) {
+    const distance = pinchDistance();
+
+    if (previousPinchDistance > 0 && distance > 0) {
+      camera.zoom *= distance / previousPinchDistance;
+
+      camera.zoom = THREE.MathUtils.clamp(
+        camera.zoom,
+        0.65,
+        2.5
+      );
+
+      camera.updateProjectionMatrix();
+    }
+
+    previousPinchDistance = distance;
+    return;
+  }
+
+  // Geser kamera berdasarkan arah layar
+  const right = new THREE.Vector3(1, 0, 0)
+    .applyQuaternion(camera.quaternion);
+
+  const up = new THREE.Vector3(0, 1, 0)
+    .applyQuaternion(camera.quaternion);
+
+  right.y = 0;
+  up.y = 0;
+
+  right.normalize();
+  up.normalize();
+
+  const speed = 0.09 / camera.zoom;
+
+  cameraTarget.addScaledVector(right, -dx * speed);
+  cameraTarget.addScaledVector(up, dy * speed);
+
+  cameraTarget.x = THREE.MathUtils.clamp(
+    cameraTarget.x, -45, 45
+  );
+
+  cameraTarget.z = THREE.MathUtils.clamp(
+    cameraTarget.z, -45, 45
+  );
+
+  updateCamera();
+});
+
+function releaseCameraPointer(event) {
+  cameraPointers.delete(event.pointerId);
+  previousPinchDistance = pinchDistance();
+}
+
+canvas.addEventListener("pointerup", releaseCameraPointer);
+canvas.addEventListener("pointercancel", releaseCameraPointer);
+
+// ======================================
+// KONTROL KEYBOARD DAN TOMBOL HP
+// ======================================
+
 const keys = {};
 
 document.addEventListener("keydown", event => {
@@ -269,7 +460,10 @@ document.querySelectorAll("[data-dir]").forEach(button => {
   button.addEventListener("lostpointercapture", release);
 });
 
+// ======================================
 // TANAM WORTEL
+// ======================================
+
 $("plantBtn").addEventListener("click", async () => {
   let nearest = null;
   let distance = Infinity;
@@ -309,7 +503,10 @@ $("plantBtn").addEventListener("click", async () => {
 
   nearest.crop = await loadModel(
     "carrot-growth-stages.glb",
-    nearest.x, 0.05, nearest.z, 1.8
+    nearest.x,
+    0.05,
+    nearest.z,
+    1.8
   );
 
   message(
@@ -319,7 +516,10 @@ $("plantBtn").addEventListener("click", async () => {
   );
 });
 
+// ======================================
 // PANEN
+// ======================================
+
 $("harvestBtn").addEventListener("click", () => {
   let nearest = null;
   let distance = Infinity;
@@ -364,7 +564,10 @@ $("harvestBtn").addEventListener("click", () => {
   updateUI();
 });
 
-// GERAK DAN ANIMASI
+// ======================================
+// GERAK DAN ANIMASI PEMAIN
+// ======================================
+
 const clock = new THREE.Clock();
 
 function animate() {
@@ -382,6 +585,7 @@ function animate() {
 
   if (dx !== 0 || dz !== 0) {
     const length = Math.hypot(dx, dz);
+
     dx /= length;
     dz /= length;
 
@@ -390,56 +594,71 @@ function animate() {
 
     player.rotation.y = Math.atan2(dx, dz);
 
-    legs[0].rotation.x = Math.sin(clock.elapsedTime * 10) * 0.4;
-    legs[1].rotation.x = -Math.sin(clock.elapsedTime * 10) * 0.4;
+    legs[0].rotation.x =
+      Math.sin(clock.elapsedTime * 10) * 0.4;
+
+    legs[1].rotation.x =
+      -Math.sin(clock.elapsedTime * 10) * 0.4;
   } else {
-    legs.forEach(leg => leg.rotation.x = 0);
+    legs.forEach(leg => {
+      leg.rotation.x = 0;
+    });
   }
 
   player.position.x = THREE.MathUtils.clamp(
     player.position.x, -40, 40
   );
+
   player.position.z = THREE.MathUtils.clamp(
     player.position.z, -40, 40
-  );
-
-  const targetCamera = new THREE.Vector3(
-    player.position.x,
-    player.position.y + 8,
-    player.position.z + 13
-  );
-
-  camera.position.lerp(targetCamera, 0.08);
-  camera.lookAt(
-    player.position.x,
-    player.position.y + 0.8,
-    player.position.z
   );
 
   renderer.render(scene, camera);
 }
 
+// ======================================
 // UKURAN LAYAR
+// ======================================
+
 window.addEventListener("resize", () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
+  const aspect = window.innerWidth / window.innerHeight;
+
+  camera.left = -viewHeight * aspect / 2;
+  camera.right = viewHeight * aspect / 2;
+  camera.top = viewHeight / 2;
+  camera.bottom = -viewHeight / 2;
+
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+  );
 });
 
+// ======================================
 // MULAI GAME
+// ======================================
+
 async function startGame() {
   updateUI();
   message("Sedang menyiapkan pertanian...");
 
   try {
     await buildFarm();
+
     loading.style.display = "none";
+
     message("Selamat datang di Farm Life Indonesia! 🌾");
+
     animate();
   } catch (error) {
     console.error("Kesalahan game:", error);
-    loadingText.textContent =
-      "Gagal memuat game. Periksa koneksi internet dan file model.";
+
+    if (loadingText) {
+      loadingText.textContent =
+        "Gagal memuat game. Periksa koneksi internet dan file model.";
+    }
   }
 }
 
